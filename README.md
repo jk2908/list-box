@@ -66,7 +66,7 @@ Available ::part(s) to style are (toggle) and (listbox-options). More styling ca
     <div slot="listbox-option">Option two</div>
     <div slot="listbox-option">Option three</div>
     <div slot="listbox-option">Option four</div>
-  &lt;/list-box>
+  </list-box>
   ```
 
 ### Event
