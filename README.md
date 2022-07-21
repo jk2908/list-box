@@ -2,7 +2,7 @@
 
 [demo](https://2908.app/list-box/demo/)
 
-Stylable listbox (select) with button trigger
+Styleable listbox (select) with button trigger
 
 ## Things
   - Styleable.
