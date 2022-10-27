@@ -76,7 +76,7 @@ const listBox = document.querySelector('list-box');
 
 setValue = () => console.log(listBox._currentValue.value);
 
-window.addEventListener('load', setValue);
+window.addEventListener('DOMLoadedContent', setValue);
 
 document.querySelector('list-box').addEventListener('change', e => {
   setValue();

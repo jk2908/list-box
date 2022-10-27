@@ -9,15 +9,11 @@ export class ListBox extends HTMLElement {
       id: '',
     };
     this._activeElement = null;
-    this.shadow = this.attachShadow({ mode: 'open' });
+    
+    this.attachShadow({ mode: 'open' });
 
-    this.open = () => this.handleOpen();
-    this.close = () => this.handleClose();
     this.keys = e => this.handleKeys(e);
-    this.trap = () => this.handleFocusTrap();
     this.tapOutside = e => this.handleTapOutside(e);
-    this.setActive = e => this.setActiveElement(e);
-    this.setCurrent = el => this.setCurrentValue(el);
   }
 
   static get observedAttributes() {
@@ -34,7 +30,7 @@ export class ListBox extends HTMLElement {
   }
 
   connectedCallback() {
-    this.shadow.innerHTML = `
+    this.shadowRoot.innerHTML = `
       <style>
         :host {
           --listbox-container-inline-size: 200px;
@@ -119,12 +115,12 @@ export class ListBox extends HTMLElement {
       </div>  
     `;
 
-    this.container = this.shadow.querySelector('.listbox-container');
-    this.toggleEl = this.shadow.querySelector('[data-toggle-listbox]');
-    this.toggleValue = this.shadow.querySelector('.listbox-toggle-value');
-    this.listbox = this.shadow.querySelector('.listbox');
+    this.container = this.shadowRoot.querySelector('.listbox-container');
+    this.toggleEl = this.shadowRoot.querySelector('[data-toggle-listbox]');
+    this.toggleValue = this.shadowRoot.querySelector('.listbox-toggle-value');
+    this.listbox = this.shadowRoot.querySelector('.listbox');
 
-    [...this.options] = this.querySelectorAll('[slot="listbox-option"]');
+    [...this.options] = this.querySelectorAll('[slot=listbox-option]');
     this.firstOption = this.options[0];
 
     const createUniqueId = () => Math.ceil(new Date().getTime() * Math.random() * 100000);
@@ -151,7 +147,7 @@ export class ListBox extends HTMLElement {
       }
 
       option.addEventListener('keydown', () => this.keys);
-      option.addEventListener('click', e => this.setActive(e));
+      option.addEventListener('click', e => this.setActiveElement(e));
     });
 
     this._currentValue = {
@@ -167,29 +163,27 @@ export class ListBox extends HTMLElement {
     this.toggleValue.textContent = this.firstOption.textContent;
 
     this.toggleEl.addEventListener('click', () => {
-      this._isExpanded === false ? this.open() : this.close();
+      this._isExpanded === false ? this.handleOpen() : this.handleClose();
     });
   }
 
   handleOpen() {
     this.closeOtherInstances();
     this.setAttribute('is-expanded', '');
-    this.previouslyFocused = this.shadow.activeElement ?? document.activeElement;
+    this.previouslyFocused = this.shadowRoot.activeElement ?? document.activeElement;
     this.toggleEl.setAttribute('aria-expanded', '');
     this._activeElement.focus();
-    this.trap();
 
-    this.shadow.addEventListener('keydown', this.keys);
+    this.shadowRoot.addEventListener('keydown', this.keys);
     document.addEventListener('click', this.tapOutside);
   }
 
   handleClose() {
     this.removeAttribute('is-expanded');
     this.toggleEl.removeAttribute('aria-expanded');
-    this.trap();
     this.previouslyFocused.focus();
 
-    this.shadow.removeEventListener('keydown', this.keys);
+    this.shadowRoot.removeEventListener('keydown', this.keys);
     document.removeEventListener('click', this.tapOutside);
   }
 
@@ -198,36 +192,49 @@ export class ListBox extends HTMLElement {
     let previous = current.previousElementSibling;
     let next = current.nextElementSibling;
 
-    if (e.key === 'Escape') this.close();
-    if (e.key === ' ') this.setActive(e);
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
+    switch (e.key) {
+      case 'Escape':
+        this.close();
+        break;
 
-      if (current === this.options[0]) {
-        return false;
-      }
+      case 'Tab':
+        e.preventDefault();
+        this.close();
+        break;
 
-      previous.focus();
-    }
+      case ' ':
+        this.setActive(e);
+        break;
 
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
+      case 'ArrowUp':
+        e.preventDefault();
 
-      if (current === this.options[this.options.length - 1]) {
-        return false;
-      }
+        if (current === this.options[0]) {
+          return;
+        }
 
-      next.focus();
+        previous.focus();
+        break;
+        
+      case 'ArrowDown':
+        e.preventDefault();
+
+        if (current === this.options[this.options.length - 1]) {
+          return;
+        }
+
+        next.focus();
+        break;
     }
   }
 
   handleTapOutside(e) {
-    !e.target.closest('list-box') ? this.close() : '';
+    if (!e.target.closest('list-box')) this.handleClose();
   }
 
   setActiveElement(e) {
     this._activeElement = e.target.closest('.listbox__option') ?? this.firstOption;
-    this.setCurrent(this._activeElement);
+    this.setCurrentValue(this._activeElement);
 
     this.options.forEach(option => {
       if (this._activeElement === option) {
@@ -252,37 +259,7 @@ export class ListBox extends HTMLElement {
     }));
 
     this.toggleValue.textContent = this._currentValue.name;
-    this.close();
-  }
-
-  handleFocusTrap() {
-    // focusable-selectors - https://github.com/KittyGiraudel/focusable-selectors
-    const selectors = [
-      'a[href]:not([tabindex^="-"])',
-      'area[href]:not([tabindex^="-"])',
-      'input:not([type="hidden"]):not([type="radio"]):not([disabled]):not([tabindex^="-"])',
-      'input[type="radio"]:not([disabled]):not([tabindex^="-"])',
-      'select:not([disabled]):not([tabindex^="-"])',
-      'textarea:not([disabled]):not([tabindex^="-"])',
-      'button:not([disabled]):not([tabindex^="-"])',
-      'iframe:not([tabindex^="-"])',
-      'audio[controls]:not([tabindex^="-"])',
-      'video[controls]:not([tabindex^="-"])',
-      '[contenteditable]:not([tabindex^="-"])',
-      '[tabindex]:not([tabindex^="-"])',
-    ].join(',');
-
-    const [...all] = document.querySelectorAll(selectors);
-    const [...slotted] = this.querySelectorAll(selectors);
-    const inert = all.filter(el => !slotted.includes(el));
-
-    if (this._isExpanded === true) {
-      inert.forEach(el => el.setAttribute('inert', ''));
-    }
-
-    if (this._isExpanded === false) {
-      inert.forEach(el => el.removeAttribute('inert'));
-    }
+    this.handleClose();
   }
 
   closeOtherInstances() {

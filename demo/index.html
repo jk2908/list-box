@@ -230,25 +230,25 @@
           <code>
             const listBox = document.querySelector('list-box');
 
-            setValue = () => console.log(listBox._currentValue.value);
+            setValue = () => console.log(e.value);
 
             window.addEventListener('load', setValue);
 
             document.querySelector('list-box').addEventListener('change', e => {
-              setValue();
+              setValue(e);
             });
           </code>
         </pre>
       </article>
     </main>
 
-    <script>
+    <script defer>
       const listBox = document.querySelector('list-box');
       const container = document.getElementById('show-value');
 
       setValue = () => container.innerHTML = listBox._currentValue.value;
 
-      window.addEventListener('load', setValue);
+      document.addEventListener('DOMContentLoaded', setValue);
 
       document.querySelector('list-box').addEventListener('change', e => {
         setValue();
