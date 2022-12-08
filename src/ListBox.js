@@ -52,6 +52,10 @@ export class ListBox extends HTMLElement {
           position: relative;
         }
 
+        :host::part(toggle-icon) {
+          pointer-events: none;
+        }
+
         :host::part(listbox) {
           display: none;
           inset-inline: 0;
@@ -104,7 +108,7 @@ export class ListBox extends HTMLElement {
 
     this.toggle.addEventListener('click', this.handleToggle.bind(this));
     this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this));
-    this.shadowRoot.addEventListener('focusout', this.handleElementFocusLoss.bind(this));
+    this.addEventListener('focusout', this.handleElementFocusLoss.bind(this));
   }
 
   disconnectedCallback() {
@@ -114,7 +118,7 @@ export class ListBox extends HTMLElement {
 
     this.toggle.removeEventListener('click', this.handleToggle.bind(this));
     this.shadowRoot.removeEventListener('keydown', this.handleKeys.bind(this));
-    this.shadowRoot.removeEventListener('focusout', this.handleElementFocusLoss.bind(this));
+    this.removeEventListener('focusout', this.handleElementFocusLoss.bind(this));
   }
 
   setInitialState() {
@@ -237,9 +241,7 @@ export class ListBox extends HTMLElement {
   handleElementFocusLoss(e) {
     const { isOpen } = this._state;
 
-    if (this.contains(e.relatedTarget)) {
-      return;
-    } else if (isOpen) {
+    if (!this.contains(e.relatedTarget)) {
       this.handleClose();
     }
   }
