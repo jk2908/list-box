@@ -1,6 +1,6 @@
 {
   "name": "list-box",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "description": "Styleable listbox (select)",
   "main": "index.js",
   "module": "index.js",

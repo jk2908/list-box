@@ -4,10 +4,6 @@
     <title>list-box</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      :root {
-        --padding: 10px;
-      }
-
       * {
         box-sizing: border-box;
         margin: 0;
@@ -16,71 +12,23 @@
       body {
         font-family: system-ui;
         line-height: 1.5;
+        margin: 80px;
       }
 
-      h1 {
-        margin-block: 20px;
-      }
-
-      h2, h3 {
-        margin-block-end: 15px;
-      }
-
-      header {
-        align-items: center;
+      header ul {
         display: flex;
-        padding: var(--padding);
+        gap: 40px;
+      }
+
+      header + main {
+        margin-block-start: 40px;
       }
 
       main {
-        margin-inline: auto;
-        max-inline-size: 65ch;
-        padding: var(--padding) var(--padding) 20px var(--padding);
-      }
-
-      main > article > ol {
-        list-style-position: inside;
-      }
-
-      ol > li:not(:last-child) {
-        margin-block-end: 10px;
-      }
-
-      article + article {
-        margin-block-start: 20px;
-      }
-
-      article > * + * {
-        margin-block-start: 10px;
-      }
-
-      ul {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        list-style: none;
-        padding: 0;
-      }
-
-      pre {
-        padding-inline-start: var(--padding);
-      }
-
-      pre > code {
-        white-space: pre-line;
-      }
-
-      .listbox-container {
-        margin-block-end: 10px;
-      }
-
-      [slot='listbox-toggle-icon'] {
-        block-size: 0.75rem;
-        margin-block-start: 0.45rem;
-      }
-
-      list-box[is-expanded] [slot='listbox-toggle-icon'] {
-        transform: rotate(180deg);
+        gap: 20px;
+        justify-content: center;
       }
     </style>
   </head>
@@ -96,162 +44,26 @@
     <main>
       <div class="listbox-container">
         <list-box>
-          <svg slot="listbox-toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330">
-            <path
-              d="M325.607 79.393c-5.857-5.857-15.355-5.858-21.213.001l-139.39 139.393L25.607 79.393c-5.857-5.857-15.355-5.858-21.213.001-5.858 5.858-5.858 15.355 0 21.213l150.004 150a14.999 14.999 0 0 0 21.212-.001l149.996-150c5.859-5.857 5.859-15.355.001-21.213z" />
-          </svg>
-          <div slot="listbox-option">Option one</div>
-          <div slot="listbox-option">Option two</div>
-          <div slot="listbox-option">Option three</div>
-          <div slot="listbox-option">Option four</div>
+          <div slot="listbox-option" value="option-one">Option one</div>
+          <div slot="listbox-option" value="option-two">Option two</div>
+          <div slot="listbox-option" value="option-three">Option three</div>
+          <div slot="listbox-option" value="option-four">Option four</div>
         </list-box>
       </div>
 
       <p>Current value: <span id="show-value"></span></p>
-
-      <h1>list-box component</h1>
-
-      <article>
-        <h2>Things</h2>
-        <ol>
-          <li>Styleable.</li>
-          <li>
-            Traps focus by making the underlying page elements
-            <a
-              href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/inert"
-              target="_blank"
-              rel="noopener norefferer">
-              inert</a
-            >
-            when the element is active.
-          </li>
-          <li>Handles focus. Focus defaults to selected option when opening the listbox, then returns to the button upon closing.</li>
-          <li>Cycling through the options via keyboard can be done using Tab (or shift + Tab) and arrow keys. Select options with Space, and close with Escape</li>
-          <li>Sets the correct roles, values and ARIA attributes.</li>
-          <li>Dispatches an event which can listened for, to do whatever with the current value.</li>
-          <li>Slots for ordering content.</li>
-        </ol>
-      </article>
-
-      <article>
-        <h2>Styling</h2>
-        <p>Most of the styling can be done by overriding these custom properties (with defaults):</p>
-        <pre>
-          <code>
-            --listbox-container-inline-size: 200px;
-            --listbox-toggle-padding: 10px;
-            --listbox-inline-size: 100%;
-            --listbox-border: 1px solid #000;
-            --listbox-background: #fff;
-            --listbox-inset-inline: 0;
-            --listbox-option-focus-outline: 2px solid blue;
-            --listbox-option-padding: 10px;
-            --listbox-option-background-hover: rgb(225 225 225);
-          </code>
-        </pre>
-
-        <p>
-          For example, you could do:
-        </p>
-
-        <pre>
-          <code>
-            list-box {
-              --listbox-inline-size: 150%;
-            }
-          </code>
-        </pre>
-
-        <p>... to make the listbox options width, 50% larger than the toggle button (listbox container).</p>
-
-        <p>Some sections of the element can also be styled using the ::part pseudo-selector...</p>
-
-        <pre>
-          <code>
-            list-box::part(toggle) {
-              background-color: green;
-            }
-          </code>
-        </pre>
-
-        <p>
-          Available ::part(s) to style are (toggle) and (listbox-options). 
-          More styling can be achieved by directly editing the component source.
-        </p>
-      </article>
-
-      <article>
-        <h2>Slots</h2>
-
-        <ol>
-          <li>
-            The <code>listbox-toggle-icon</code> slot means you can add your own icon on the listbox button. 
-            This doesn't animate or transform by default, but say you wanted to rotate an 
-            arrow icon when the listbox was open, you could do something like:
-
-            <pre>
-              <code>
-                [slot=listbox-toggle-icon] {
-                  transition: transform 125ms ease-in-out;
-                }
-              
-                list-box[is-expanded] [slot=listbox-toggle-icon] {
-                  transform: rotate(180deg);
-                }
-              </code>
-            </pre>
-          </li>
-          <li>
-            Listbox options are inserted using the <code>listbox-option</code> slot. Like so, with icon:
-
-            <pre>
-              <code>
-                &lt;list-box&gt;
-                  &lt;svg slot="listbox-toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330"&gt;
-                    &lt;path
-                      d="M325.607 79.393c-5.857-5.857-15.355-5.858-21.213.001l-139.39 139.393L25.607 79.393c-5.857-5.857-15.355-5.858-21.213.001-5.858 5.858-5.858 15.355 0 21.213l150.004 150a14.999 14.999 0 0 0 21.212-.001l149.996-150c5.859-5.857 5.859-15.355.001-21.213z" /&gt;
-                  &lt;/svg>
-                  &lt;div slot="listbox-option"&gt;Option one&lt;/div&gt;
-                  &lt;div slot="listbox-option"&gt;Option two&lt;/div&gt;
-                  &lt;div slot="listbox-option"&gt;Option three&lt;/div&gt;
-                  &lt;div slot="listbox-option"&gt;Option four&lt;/div&gt;
-                &lt;/list-box&gt;
-              </code>
-            </pre>
-          </li>
-        </ol>
-      </article>
-
-      <article>
-        <h2>Event</h2>
-
-        <p>Listen for a <code>change</code> event on the <code>list-box</code> element, to read the current value.</p>
-        <pre>
-          <code>
-            const listBox = document.querySelector('list-box');
-
-            setValue = () => console.log(e.value);
-
-            window.addEventListener('load', setValue);
-
-            document.querySelector('list-box').addEventListener('change', e => {
-              setValue(e);
-            });
-          </code>
-        </pre>
-      </article>
     </main>
 
     <script defer>
       const listBox = document.querySelector('list-box');
       const container = document.getElementById('show-value');
 
-      setValue = () => container.innerHTML = listBox._currentValue.value;
+      document.addEventListener('DOMContentLoaded', () => {
+        container.innerHTML = listBox.state.value;
+      });
 
-      document.addEventListener('DOMContentLoaded', setValue);
-
-      document.querySelector('list-box').addEventListener('change', e => {
-        setValue();
+      listBox.addEventListener('change', e => {
+        container.innerHTML = e.detail.value;
       });
     </script>
 

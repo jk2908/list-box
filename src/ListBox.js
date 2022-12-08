@@ -2,30 +2,35 @@ export class ListBox extends HTMLElement {
   constructor() {
     super();
 
-    this._isExpanded = false;
-    this._currentValue = {
-      name: '',
-      value: '',
-      id: '',
-    };
-    this._activeElement = null;
-    
     this.attachShadow({ mode: 'open' });
 
-    this.keys = e => this.handleKeys(e);
-    this.tapOutside = e => this.handleTapOutside(e);
+    this._state = {
+      name: '',
+      value: '',
+      element: null,
+      isOpen: false,
+      placeholder: null,
+    };
+  }
+
+  get state() {
+    return this._state;
+  }
+
+  set state(state = {}) {
+    this._state = state;
   }
 
   static get observedAttributes() {
-    return ['is-expanded'];
+    return ['is-open', 'placeholder', 'initial-value'];
   }
 
   attributeChangedCallback(property, oldValue, newValue) {
     if (oldValue === newValue) return;
     this[property] = newValue;
 
-    if (property === 'is-expanded') {
-      this._isExpanded = !this._isExpanded;
+    if (property === 'is-open') {
+      this._state.isOpen = !this._state.isOpen;
     }
   }
 
@@ -33,242 +38,213 @@ export class ListBox extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host {
-          --listbox-container-inline-size: 200px;
-          --listbox-toggle-padding: 10px;
-          --listbox-inline-size: 100%;
-          --listbox-border: 1px solid #000;
-          --listbox-background: #fff;
-          --listbox-inset-inline: 0;
-          --listbox-option-focus-outline: 2px solid blue;
-          --listbox-option-padding: 10px;
-          --listbox-option-background-hover: rgb(225 225 225);
-
           contain: content;
           font: inherit;
           position: relative;
         }
 
-        .listbox-container {
-          inline-size: var(--listbox-container-inline-size, 200px);
+        :host::part(container) {
           position: relative;
         }
 
-        [data-toggle-listbox] {
-          appearance: none;
-          cursor: pointer;
-          display: flex;
+        :host::part(toggle) {
           font: inherit;
-          inline-size: var(--listbox-toggle-inline-size, 100%);
-          justify-content: space-between;
-          padding: var(--listbox-toggle-padding, 10px);
           position: relative;
-          text-align: start;
         }
 
-        .listbox {
-          background-color: var(--listbox-background, #fff);
-          border: var(--listbox-border);
+        :host::part(listbox) {
           display: none;
-          inline-size: var(--listbox-inline-size, 100%);
           inset-inline: 0;
           position: absolute;
           z-index: 1;
         }
 
-        :host([is-expanded]) .listbox {
+        :host([is-open])::part(listbox) {
           display: block;
-        }
-
-        ::slotted([slot=listbox-toggle-icon]) {
-          margin-block-start: auto;
-        }
-
-        :host([is-expanded]) ::slotted([slot=listbox-toggle-icon]) {
-          color: blue;
-          font-weight: bold;
-        }
-
-        ::slotted([slot=listbox-option]) {
-          cursor: pointer;
-          padding: var(--listbox-option-padding, 10px);
-        }
-
-        ::slotted([slot=listbox-option]:hover) {
-          background-color: var(--listbox-option-background-hover);
-        }
-
-        ::slotted([slot=listbox-option]:focus) {
-          outline: var(--listbox-option-focus-outline);
         }
       </style>
 
-      <div class="listbox-container">
-        <button part="toggle" data-toggle-listbox>
-          <span class="listbox-toggle-value"></span>
-          <slot name="listbox-toggle-icon" class="listbox-toggle-icon"></slot>
+      <div part="container">
+        <button part="toggle" aria-expanded="false">
+          <span part="toggle-value"></span>
+          <slot class="listbox-toggle-icon" name="listbox-toggle-icon" part="toggle-icon"></slot>
         </button>
-        <div class="listbox">
-          <div part="listbox-options" class="listbox__options" role="listbox">
+        <div part="listbox">
+          <div role="listbox" part="listbox-options">
             <slot name="listbox-option"></slot>
           </div>
         </div>
       </div>  
     `;
 
-    this.container = this.shadowRoot.querySelector('.listbox-container');
-    this.toggleEl = this.shadowRoot.querySelector('[data-toggle-listbox]');
-    this.toggleValue = this.shadowRoot.querySelector('.listbox-toggle-value');
-    this.listbox = this.shadowRoot.querySelector('.listbox');
+    this.slotted = [...this.querySelectorAll('[slot="listbox-option"]')];
+    this.toggle = this.shadowRoot.querySelector('[part="toggle"]');
+    this.toggleValue = this.shadowRoot.querySelector('[part="toggle-value"]');
 
-    [...this.options] = this.querySelectorAll('[slot=listbox-option]');
-    this.firstOption = this.options[0];
+    this.setInitialState();
 
-    const createUniqueId = () => Math.ceil(new Date().getTime() * Math.random() * 100000);
+    const { name, isOpen, element, placeholder } = this._state;
 
-    this.setAttribute('data-listbox', createUniqueId());
-
-    this.options.forEach(option => {
-      const name = option.textContent;
-      const value = option.textContent;
-
-      option.classList.add('listbox__option');
-      option.innerHTML = name;
-      option.setAttribute('value', value);
-      option.setAttribute('data-listbox-option', createUniqueId());
-      option.setAttribute('role', 'option');
+    for (const option of this.slotted) {
       option.setAttribute('tabindex', '0');
+      option.setAttribute('role', 'option');
 
-      if (option === this.firstOption) {
-        option.setAttribute('aria-selected', true);
-        option.setAttribute('selected', '');
-      } else {
-        option.setAttribute('aria-selected', false);
-        option.removeAttribute('selected');
-      }
-
-      option.addEventListener('keydown', () => this.keys);
-      option.addEventListener('click', e => this.setActiveElement(e));
-    });
-
-    this._currentValue = {
-      name: this.firstOption.textContent,
-      value: this.firstOption.getAttribute('value'),
-      id: this.firstOption.getAttribute('data-listbox-option'),
-    };
-
-    if (this._activeElement === null) {
-      this._activeElement = this.firstOption;
+      option.addEventListener('click', this.setState.bind(this));
     }
 
-    this.toggleValue.textContent = this.firstOption.textContent;
+    if (placeholder) {
+      this.toggleValue.textContent = placeholder;
+    } else {
+      this.toggleValue.textContent = name;
+    }
 
-    this.toggleEl.addEventListener('click', () => {
-      this._isExpanded === false ? this.handleOpen() : this.handleClose();
-    });
+    this.setCurrentElementAttributes(element);
+
+    if (isOpen) this.handleOpen();
+
+    this.toggle.addEventListener('click', this.handleToggle.bind(this));
+    this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this));
+    this.shadowRoot.addEventListener('focusout', this.handleElementFocusLoss.bind(this));
+  }
+
+  disconnectedCallback() {
+    for (const option of this.slotted) {
+      option.removeEventListener('click', this.setState.bind(this));
+    }
+
+    this.toggle.removeEventListener('click', this.handleToggle.bind(this));
+    this.shadowRoot.removeEventListener('keydown', this.handleKeys.bind(this));
+    this.shadowRoot.removeEventListener('focusout', this.handleElementFocusLoss.bind(this));
+  }
+
+  setInitialState() {
+    const initialValue = this.getAttribute('initial-value');
+    const placeholder = this.getAttribute('placeholder');
+
+    const defaultState = {
+      name: this.slotted[0].textContent,
+      value: this.slotted[0].getAttribute('value'),
+      element: this.slotted[0],
+      isOpen: false,
+      placeholder: null,
+    };
+
+    if (initialValue) {
+      const option = this.slotted.find(option => {
+        return option.textContent === initialValue || option.getAttribute('value') === initialValue;
+      });
+
+      if (option) {
+        this._state = {
+          name: option.textContent,
+          value: option.getAttribute('value'),
+          element: option,
+          isOpen: false,
+          placeholder: null,
+        };
+      } else {
+        this._state = defaultState;
+      }
+    } else {
+      this._state = defaultState;
+    }
+
+    if (placeholder) {
+      this._state.placeholder = placeholder;
+    }
+  }
+
+  handleToggle() {
+    const { isOpen } = this._state;
+
+    isOpen ? this.handleClose() : this.handleOpen();
   }
 
   handleOpen() {
-    this.closeOtherInstances();
-    this.setAttribute('is-expanded', '');
-    this.previouslyFocused = this.shadowRoot.activeElement ?? document.activeElement;
-    this.toggleEl.setAttribute('aria-expanded', '');
-    this._activeElement.focus();
+    const { element } = this._state;
 
-    this.shadowRoot.addEventListener('keydown', this.keys);
-    document.addEventListener('click', this.tapOutside);
+    this.setAttribute('is-open', '');
+    this.toggle.setAttribute('aria-expanded', 'true');
+    element.focus();
   }
 
   handleClose() {
-    this.removeAttribute('is-expanded');
-    this.toggleEl.removeAttribute('aria-expanded');
-    this.previouslyFocused.focus();
-
-    this.shadowRoot.removeEventListener('keydown', this.keys);
-    document.removeEventListener('click', this.tapOutside);
+    this.removeAttribute('is-open');
+    this.toggle.setAttribute('aria-expanded', 'false');
+    this.toggle.focus();
   }
 
   handleKeys(e) {
-    let current = document.activeElement;
-    let previous = current.previousElementSibling;
-    let next = current.nextElementSibling;
+    const { isOpen } = this._state;
+
+    if (!isOpen) return;
+
+    e.preventDefault();
+
+    const currentElement = document.activeElement;
 
     switch (e.key) {
-      case 'Escape':
-        this.close();
-        break;
-
-      case 'Tab':
-        e.preventDefault();
-        this.close();
-        break;
-
       case ' ':
-        this.setActive(e);
-        break;
-
+        this.setState(e);
+        return;
+      case 'Escape':
+        this.handleClose();
+        return;
+      case 'Tab':
+        this.handleClose();
+        return;
       case 'ArrowUp':
-        e.preventDefault();
-
-        if (current === this.options[0]) {
-          return;
-        }
-
-        previous.focus();
-        break;
-        
+        if (currentElement === this.slotted[0]) return;
+        currentElement.previousElementSibling.focus();
+        return;
       case 'ArrowDown':
-        e.preventDefault();
-
-        if (current === this.options[this.options.length - 1]) {
-          return;
-        }
-
-        next.focus();
-        break;
+        if (currentElement === this.slotted[this.slotted.length - 1]) return;
+        currentElement.nextElementSibling.focus();
+        return;
     }
   }
 
-  handleTapOutside(e) {
-    if (!e.target.closest('list-box')) this.handleClose();
-  }
+  setState(e) {
+    const option = e.target.closest('[slot="listbox-option"]');
 
-  setActiveElement(e) {
-    this._activeElement = e.target.closest('.listbox__option') ?? this.firstOption;
-    this.setCurrentValue(this._activeElement);
+    this._state.name = option.textContent;
+    this._state.value = option.getAttribute('value');
+    this._state.element = option;
 
-    this.options.forEach(option => {
-      if (this._activeElement === option) {
-        option.setAttribute('aria-selected', true);
-        option.setAttribute('selected', '');
-      } else {
-        option.setAttribute('aria-selected', false);
-        option.removeAttribute('selected');
-      }
-    });
-  }
+    const { name, value, element } = this._state;
 
-  setCurrentValue(el) {
-    this._currentValue = {
-      name: el.textContent,
-      value: el.getAttribute('value'),
-      id: el.getAttribute('data-listbox-option'),
-    };
-
-    this.dispatchEvent(new Event('change', { 
+    const changeEvent = new CustomEvent('change', {
       bubbles: true,
-    }));
+      detail: { value: value },
+    });
 
-    this.toggleValue.textContent = this._currentValue.name;
+    this.toggleValue.textContent = name;
+    this.dispatchEvent(changeEvent);
+    this.setCurrentElementAttributes(element);
     this.handleClose();
   }
 
-  closeOtherInstances() {
-    const [...els] = document.querySelectorAll('list-box');
-
-    for (const el of els) {
-      if (el !== this && el._isExpanded === true) {
-        el.handleClose();
+  setCurrentElementAttributes(element) {
+    for (const option of this.slotted) {
+      if (option === element) {
+        option.setAttribute('aria-selected', 'true');
+      } else {
+        option.setAttribute('aria-selected', 'false');
       }
     }
   }
+
+  handleElementFocusLoss(e) {
+    const { isOpen } = this._state;
+
+    if (this.contains(e.relatedTarget)) {
+      return;
+    } else if (isOpen) {
+      this.handleClose();
+    }
+  }
+}
+
+if (!customElements.get('list-box')) {
+  customElements.define('list-box', ListBox);
 }
