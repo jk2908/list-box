@@ -10,6 +10,7 @@ export class ListBox extends HTMLElement {
       element: null,
       isOpen: false,
       placeholder: null,
+      firstRender: true
     };
   }
 
@@ -19,6 +20,7 @@ export class ListBox extends HTMLElement {
 
   set state(state = {}) {
     this._state = state;
+    this.render(state.element);
   }
 
   static get observedAttributes() {
@@ -87,7 +89,7 @@ export class ListBox extends HTMLElement {
 
     this.setInitialState();
 
-    const { name, isOpen, element, placeholder } = this._state;
+    const { name, isOpen, element } = this._state;
 
     for (const option of this.slotted) {
       option.setAttribute('tabindex', '0');
@@ -96,14 +98,7 @@ export class ListBox extends HTMLElement {
       option.addEventListener('click', this.setState.bind(this));
     }
 
-    if (placeholder) {
-      this.toggleValue.textContent = placeholder;
-    } else {
-      this.toggleValue.textContent = name;
-    }
-
-    this.setCurrentElementAttributes(element);
-
+    this.render(element);
     if (isOpen) this.handleOpen();
 
     this.toggle.addEventListener('click', this.handleToggle.bind(this));
@@ -131,6 +126,7 @@ export class ListBox extends HTMLElement {
       element: this.slotted[0],
       isOpen: false,
       placeholder: null,
+      firstRender: true
     };
 
     if (initialValue) {
@@ -145,6 +141,7 @@ export class ListBox extends HTMLElement {
           element: option,
           isOpen: false,
           placeholder: null,
+          firstRender: true
         };
       } else {
         this._state = defaultState;
@@ -215,20 +212,37 @@ export class ListBox extends HTMLElement {
     this._state.value = option.getAttribute('value');
     this._state.element = option;
 
-    const { name, value, element } = this._state;
+    const { element } = this._state;
+
+    this.render(element)
+  }
+
+  handleElementFocusLoss(e) {
+    if (!this.contains(e.relatedTarget)) {
+      this.handleClose();
+    }
+  }
+
+  dispatch() {
+    const { value } = this._state;
 
     const changeEvent = new CustomEvent('change', {
       bubbles: true,
       detail: { value: value },
     });
 
-    this.toggleValue.textContent = name;
     this.dispatchEvent(changeEvent);
-    this.setCurrentElementAttributes(element);
-    this.handleClose();
   }
 
-  setCurrentElementAttributes(element) {
+  render(element) {
+    const { name, placeholder, firstRender } = this._state;
+
+    if (placeholder && firstRender) {
+      this.toggleValue.textContent = placeholder;
+    } else {
+      this.toggleValue.textContent = name;
+    }
+
     for (const option of this.slotted) {
       if (option === element) {
         option.setAttribute('aria-selected', 'true');
@@ -236,14 +250,10 @@ export class ListBox extends HTMLElement {
         option.setAttribute('aria-selected', 'false');
       }
     }
-  }
 
-  handleElementFocusLoss(e) {
-    const { isOpen } = this._state;
-
-    if (!this.contains(e.relatedTarget)) {
-      this.handleClose();
-    }
+    this.handleClose();
+    this.dispatch();
+    this._state.firstRender = false;
   }
 }
 
