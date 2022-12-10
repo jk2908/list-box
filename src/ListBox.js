@@ -20,7 +20,7 @@ export class ListBox extends HTMLElement {
 
   set state(state = {}) {
     this._state = state;
-    this.render(state.element);
+    this.render();
   }
 
   static get observedAttributes() {
@@ -98,7 +98,7 @@ export class ListBox extends HTMLElement {
       option.addEventListener('click', this.setState.bind(this));
     }
 
-    this.render(element);
+    this.render();
     if (isOpen) this.handleOpen();
 
     this.toggle.addEventListener('click', this.handleToggle.bind(this));
@@ -212,9 +212,7 @@ export class ListBox extends HTMLElement {
     this._state.value = option.getAttribute('value');
     this._state.element = option;
 
-    const { element } = this._state;
-
-    this.render(element)
+    this.render()
   }
 
   handleElementFocusLoss(e) {
@@ -234,8 +232,8 @@ export class ListBox extends HTMLElement {
     this.dispatchEvent(changeEvent);
   }
 
-  render(element) {
-    const { name, placeholder, firstRender } = this._state;
+  render() {
+    const { name, element, placeholder, firstRender } = this._state;
 
     if (placeholder && firstRender) {
       this.toggleValue.textContent = placeholder;
