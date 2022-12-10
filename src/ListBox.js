@@ -177,10 +177,10 @@ export class ListBox extends HTMLElement {
 
   handleKeys(e) {
     const { isOpen } = this._state;
+    const keys = [' ', 'Escape', 'Tab', 'ArrowUp', 'ArrowDown'];
 
     if (!isOpen) return;
-
-    e.preventDefault();
+    if (keys.includes(e.key)) e.preventDefault();
     
     const currentElement = document.activeElement;
 
