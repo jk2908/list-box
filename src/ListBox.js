@@ -89,7 +89,7 @@ export class ListBox extends HTMLElement {
 
     this.setInitialState();
 
-    const { name, isOpen, element } = this._state;
+    const { isOpen } = this._state;
 
     for (const option of this.slotted) {
       option.setAttribute('tabindex', '0');
@@ -181,7 +181,7 @@ export class ListBox extends HTMLElement {
     if (!isOpen) return;
 
     e.preventDefault();
-
+    
     const currentElement = document.activeElement;
 
     switch (e.key) {
@@ -223,7 +223,6 @@ export class ListBox extends HTMLElement {
 
   dispatch() {
     const { value } = this._state;
-
     const changeEvent = new CustomEvent('change', {
       bubbles: true,
       detail: { value: value },
