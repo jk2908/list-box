@@ -95,23 +95,23 @@ export class ListBox extends HTMLElement {
       option.setAttribute('tabindex', '0');
       option.setAttribute('role', 'option');
 
-      option.addEventListener('click', this.setState.bind(this));
+      option.addEventListener('mouseup', this.setState.bind(this));
     }
 
     this.render();
     if (isOpen) this.handleOpen();
 
-    this.toggle.addEventListener('click', this.handleToggle.bind(this));
+    this.toggle.addEventListener('mousedown', this.handleToggle.bind(this));
     this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this));
     this.addEventListener('focusout', this.handleElementFocusLoss.bind(this));
   }
 
   disconnectedCallback() {
     for (const option of this.slotted) {
-      option.removeEventListener('click', this.setState.bind(this));
+      option.removeEventListener('mouseup', this.setState.bind(this));
     }
 
-    this.toggle.removeEventListener('click', this.handleToggle.bind(this));
+    this.toggle.removeEventListener('mousedown', this.handleToggle.bind(this));
     this.shadowRoot.removeEventListener('keydown', this.handleKeys.bind(this));
     this.removeEventListener('focusout', this.handleElementFocusLoss.bind(this));
   }
