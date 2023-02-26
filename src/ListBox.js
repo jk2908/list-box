@@ -1,38 +1,42 @@
+const initialState = {
+  name: '',
+  value: '',
+  element: null,
+  isOpen: false,
+  placeholder: null,
+  firstRender: true,
+}
+
 export class ListBox extends HTMLElement {
+  #state
+
   constructor() {
-    super();
+    super()
 
-    this.attachShadow({ mode: 'open' });
-
-    this._state = {
-      name: '',
-      value: '',
-      element: null,
-      isOpen: false,
-      placeholder: null,
-      firstRender: true
-    };
+    this.attachShadow({ mode: 'open' })
+    this.#state = initialState;
+    this.controller = new AbortController()
   }
 
   get state() {
-    return this._state;
+    return this.#state
   }
 
   set state(state = {}) {
-    this._state = state;
-    this.render();
+    this.#state = state
+    this.render()
   }
 
   static get observedAttributes() {
-    return ['is-open', 'placeholder', 'initial-value'];
+    return ['open']
   }
 
   attributeChangedCallback(property, oldValue, newValue) {
-    if (oldValue === newValue) return;
-    this[property] = newValue;
+    if (oldValue === newValue) return
+    this[property] = newValue
 
-    if (property === 'is-open') {
-      this._state.isOpen = !this._state.isOpen;
+    if (property === 'open') {
+      this.#state.isOpen = !this.#state.isOpen
     }
   }
 
@@ -65,7 +69,7 @@ export class ListBox extends HTMLElement {
           z-index: 1;
         }
 
-        :host([is-open])::part(listbox) {
+        :host([open])::part(listbox) {
           display: block;
         }
       </style>
@@ -81,44 +85,39 @@ export class ListBox extends HTMLElement {
           </div>
         </div>
       </div>  
-    `;
+    `
 
-    this.slotted = [...this.querySelectorAll('[slot="listbox-option"]')];
-    this.toggle = this.shadowRoot.querySelector('[part="toggle"]');
-    this.toggleValue = this.shadowRoot.querySelector('[part="toggle-value"]');
+    this.slotted = [...this.querySelectorAll('[slot="listbox-option"]')]
+    this.toggle = this.shadowRoot.querySelector('[part="toggle"]')
+    this.toggleValue = this.shadowRoot.querySelector('[part="toggle-value"]')
 
-    this.setInitialState();
+    this.setInitialState()
 
-    const { isOpen } = this._state;
+    const { isOpen } = this.#state
+    const { signal } = this.controller
 
     for (const option of this.slotted) {
-      option.setAttribute('tabindex', '0');
-      option.setAttribute('role', 'option');
+      option.setAttribute('tabindex', '0')
+      option.setAttribute('role', 'option')
 
-      option.addEventListener('mouseup', this.setState.bind(this));
+      option.addEventListener('mouseup', this.setState.bind(this), { signal })
     }
 
-    this.render();
-    if (isOpen) this.handleOpen();
+    this.render()
+    if (isOpen) this.handleOpen()
 
-    this.toggle.addEventListener('mousedown', this.handleToggle.bind(this));
-    this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this));
-    this.addEventListener('focusout', this.handleElementFocusLoss.bind(this));
+    this.toggle.addEventListener('mousedown', this.handleToggle.bind(this), { signal })
+    this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this), { signal })
+    this.addEventListener('focusout', this.handleElementFocusLoss.bind(this), { signal })
   }
 
   disconnectedCallback() {
-    for (const option of this.slotted) {
-      option.removeEventListener('mouseup', this.setState.bind(this));
-    }
-
-    this.toggle.removeEventListener('mousedown', this.handleToggle.bind(this));
-    this.shadowRoot.removeEventListener('keydown', this.handleKeys.bind(this));
-    this.removeEventListener('focusout', this.handleElementFocusLoss.bind(this));
+    this.controller.abort()
   }
 
   setInitialState() {
-    const initialValue = this.getAttribute('initial-value');
-    const placeholder = this.getAttribute('placeholder');
+    const initialValue = this.getAttribute('initial-value')
+    const placeholder = this.getAttribute('placeholder')
 
     const defaultState = {
       name: this.slotted[0].textContent,
@@ -126,134 +125,134 @@ export class ListBox extends HTMLElement {
       element: this.slotted[0],
       isOpen: false,
       placeholder: null,
-      firstRender: true
-    };
+      firstRender: true,
+    }
 
     if (initialValue) {
       const option = this.slotted.find(option => {
-        return option.textContent === initialValue || option.getAttribute('value') === initialValue;
-      });
+        return option.textContent === initialValue || option.getAttribute('value') === initialValue
+      })
 
       if (option) {
-        this._state = {
+        this.#state = {
           name: option.textContent,
           value: option.getAttribute('value'),
           element: option,
           isOpen: false,
           placeholder: null,
-          firstRender: true
-        };
+          firstRender: true,
+        }
       } else {
-        this._state = defaultState;
+        this.#state = defaultState
       }
     } else {
-      this._state = defaultState;
+      this.#state = defaultState
     }
 
     if (placeholder) {
-      this._state.placeholder = placeholder;
+      this.#state.placeholder = placeholder
     }
   }
 
   handleToggle() {
-    const { isOpen } = this._state;
+    const { isOpen } = this.#state
 
-    isOpen ? this.handleClose() : this.handleOpen();
+    isOpen ? this.handleClose() : this.handleOpen()
   }
 
   handleOpen() {
-    const { element } = this._state;
+    const { element } = this.#state
 
-    this.setAttribute('is-open', '');
-    this.toggle.setAttribute('aria-expanded', 'true');
-    element.focus();
+    this.setAttribute('open', '')
+    this.toggle.setAttribute('aria-expanded', 'true')
+    element.focus()
   }
 
   handleClose() {
-    this.removeAttribute('is-open');
-    this.toggle.setAttribute('aria-expanded', 'false');
-    this.toggle.focus();
+    this.removeAttribute('open')
+    this.toggle.setAttribute('aria-expanded', 'false')
+    this.toggle.focus()
   }
 
   handleKeys(e) {
-    const { isOpen } = this._state;
-    const keys = [' ', 'Escape', 'Tab', 'ArrowUp', 'ArrowDown'];
+    const { isOpen } = this.#state
+    const keys = [' ', 'Escape', 'Tab', 'ArrowUp', 'ArrowDown']
 
-    if (!isOpen) return;
-    if (keys.includes(e.key)) e.preventDefault();
-    
-    const currentElement = document.activeElement;
+    if (!isOpen) return
+    if (keys.includes(e.key)) e.preventDefault()
+
+    const currentElement = document.activeElement
 
     switch (e.key) {
       case ' ':
-        this.setState(e);
-        return;
+        this.setState(e)
+        return
       case 'Escape':
-        this.handleClose();
-        return;
+        this.handleClose()
+        return
       case 'Tab':
-        this.handleClose();
-        return;
+        this.handleClose()
+        return
       case 'ArrowUp':
-        if (currentElement === this.slotted[0]) return;
-        currentElement.previousElementSibling.focus();
-        return;
+        if (currentElement === this.slotted[0]) return
+        currentElement.previousElementSibling.focus()
+        return
       case 'ArrowDown':
-        if (currentElement === this.slotted[this.slotted.length - 1]) return;
-        currentElement.nextElementSibling.focus();
-        return;
+        if (currentElement === this.slotted[this.slotted.length - 1]) return
+        currentElement.nextElementSibling.focus()
+        return
     }
   }
 
   setState(e) {
-    const option = e.target.closest('[slot="listbox-option"]');
+    const option = e.target.closest('[slot="listbox-option"]')
 
-    this._state.name = option.textContent;
-    this._state.value = option.getAttribute('value');
-    this._state.element = option;
+    this.#state.name = option.textContent
+    this.#state.value = option.getAttribute('value')
+    this.#state.element = option
 
     this.render()
   }
 
   handleElementFocusLoss(e) {
     if (!this.contains(e.relatedTarget)) {
-      this.handleClose();
+      this.handleClose()
     }
   }
 
   dispatch() {
-    const { value } = this._state;
+    const { value } = this.#state
     const changeEvent = new CustomEvent('change', {
       bubbles: true,
       detail: { value: value },
-    });
+    })
 
-    this.dispatchEvent(changeEvent);
+    this.dispatchEvent(changeEvent)
   }
 
   render() {
-    const { name, element, placeholder, firstRender } = this._state;
+    const { name, element, placeholder, firstRender } = this.#state
 
     if (placeholder && firstRender) {
-      this.toggleValue.textContent = placeholder;
+      this.toggleValue.textContent = placeholder
     } else {
-      this.toggleValue.textContent = name;
+      this.toggleValue.textContent = name
     }
 
     for (const option of this.slotted) {
       if (option === element) {
-        option.setAttribute('aria-selected', 'true');
+        option.setAttribute('aria-selected', 'true')
       } else {
-        option.setAttribute('aria-selected', 'false');
+        option.setAttribute('aria-selected', 'false')
       }
     }
 
-    this.handleClose();
-    this.dispatch();
-    this._state.firstRender = false;
+    this.handleClose()
+    this.dispatch()
+    this.#state.firstRender = false
   }
 }
 
 if (!customElements.get('list-box')) {
-  customElements.define('list-box', ListBox);
+  customElements.define('list-box', ListBox)
 }
