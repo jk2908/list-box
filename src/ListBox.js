@@ -14,7 +14,7 @@ export class ListBox extends HTMLElement {
     super()
 
     this.attachShadow({ mode: 'open' })
-    this.#state = initialState;
+    this.#state = { ...initialState };
     this.controller = new AbortController()
   }
 
