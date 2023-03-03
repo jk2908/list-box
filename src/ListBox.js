@@ -100,7 +100,7 @@ export class ListBox extends HTMLElement {
       option.setAttribute('tabindex', '0')
       option.setAttribute('role', 'option')
 
-      option.addEventListener('mouseup', this.setState.bind(this), { signal })
+      option.addEventListener('mouseup', this.handleSelect.bind(this), { signal })
     }
 
     this.render()
@@ -185,7 +185,7 @@ export class ListBox extends HTMLElement {
 
     switch (e.key) {
       case ' ':
-        this.setState(e)
+        this.handleSelect(e)
         return
       case 'Escape':
         this.handleClose()
@@ -204,13 +204,15 @@ export class ListBox extends HTMLElement {
     }
   }
 
-  setState(e) {
+  handleSelect(e) {
     const option = e.target.closest('[slot="listbox-option"]')
 
-    this.#state.name = option.textContent
-    this.#state.value = option.getAttribute('value')
-    this.#state.element = option
+    if (!option) return
 
+    const newName = option.textContent
+    const newValue = option.getAttribute('value')
+
+    this.setState({ name: newName, value: newValue, element: option })
     this.render()
   }
 
@@ -218,6 +220,10 @@ export class ListBox extends HTMLElement {
     if (!this.contains(e.relatedTarget)) {
       this.handleClose()
     }
+  }
+
+  setState(newState) {
+    this.#state = { ...this.#state, ...newState } 
   }
 
   dispatch() {
