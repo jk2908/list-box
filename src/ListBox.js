@@ -14,17 +14,8 @@ export class ListBox extends HTMLElement {
     super()
 
     this.attachShadow({ mode: 'open' })
-    this.#state = { ...initialState };
+    this.#state = { ...initialState }
     this.controller = new AbortController()
-  }
-
-  get state() {
-    return this.#state
-  }
-
-  set state(state = {}) {
-    this.#state = state
-    this.render()
   }
 
   static get observedAttributes() {
@@ -32,12 +23,35 @@ export class ListBox extends HTMLElement {
   }
 
   attributeChangedCallback(property, oldValue, newValue) {
-    if (oldValue === newValue) return
+    if (oldValue === newValue) {
+      return
+    }
+
     this[property] = newValue
 
     if (property === 'open') {
       this.#state.isOpen = !this.#state.isOpen
     }
+  }
+
+  get state() {
+    return this.#state
+  }
+
+  set state(newState) {
+    this.#state = { ...this.#state, ...newState }
+  }
+
+  get slotted() {
+    return Array.from(this.querySelectorAll('[slot=listbox-option]'))
+  }
+
+  get toggle() {
+    return this.shadowRoot.querySelector('[part=toggle]')
+  }
+
+  get toggleValue() {
+    return this.shadowRoot.querySelector('[part=toggle-value]')
   }
 
   connectedCallback() {
@@ -87,13 +101,8 @@ export class ListBox extends HTMLElement {
       </div>  
     `
 
-    this.slotted = [...this.querySelectorAll('[slot="listbox-option"]')]
-    this.toggle = this.shadowRoot.querySelector('[part="toggle"]')
-    this.toggleValue = this.shadowRoot.querySelector('[part="toggle-value"]')
-
     this.setInitialState()
 
-    const { isOpen } = this.#state
     const { signal } = this.controller
 
     for (const option of this.slotted) {
@@ -104,7 +113,6 @@ export class ListBox extends HTMLElement {
     }
 
     this.render()
-    if (isOpen) this.handleOpen()
 
     this.toggle.addEventListener('mousedown', this.handleToggle.bind(this), { signal })
     this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this), { signal })
@@ -118,6 +126,7 @@ export class ListBox extends HTMLElement {
   setInitialState() {
     const initialValue = this.getAttribute('initial-value')
     const placeholder = this.getAttribute('placeholder')
+    const isOpen = this.hasAttribute('open')
 
     const defaultState = {
       name: this.slotted[0].textContent,
@@ -134,38 +143,42 @@ export class ListBox extends HTMLElement {
       })
 
       if (option) {
-        this.#state = {
+        this.state = {
           name: option.textContent,
           value: option.getAttribute('value'),
           element: option,
-          isOpen: false,
-          placeholder: null,
-          firstRender: true,
         }
       } else {
-        this.#state = defaultState
+        this.state = { ...defaultState }
       }
     } else {
-      this.#state = defaultState
+      this.state = { ...defaultState }
+    }
+
+    if (isOpen) {
+      this.state = { isOpen: true }
     }
 
     if (placeholder) {
-      this.#state.placeholder = placeholder
+      this.state = { placeholder }
     }
   }
 
   handleToggle() {
-    const { isOpen } = this.#state
+    const { isOpen } = this.state
 
     isOpen ? this.handleClose() : this.handleOpen()
   }
 
   handleOpen() {
-    const { element } = this.#state
+    const { element } = this.state
 
     this.setAttribute('open', '')
     this.toggle.setAttribute('aria-expanded', 'true')
-    element.focus()
+
+    setTimeout(() => {
+      element.focus()
+    }, 0)
   }
 
   handleClose() {
@@ -175,17 +188,22 @@ export class ListBox extends HTMLElement {
   }
 
   handleKeys(e) {
-    const { isOpen } = this.#state
+    const { isOpen } = this.state
     const keys = [' ', 'Escape', 'Tab', 'ArrowUp', 'ArrowDown']
 
-    if (!isOpen) return
-    if (keys.includes(e.key)) e.preventDefault()
+    if (keys.includes(e.key) && isOpen) {
+      e.preventDefault()
+    }
 
     const currentElement = document.activeElement
 
     switch (e.key) {
       case ' ':
-        this.handleSelect(e)
+        if (e.target === this.toggle) {
+          this.handleToggle()
+        } else if (this.slotted.includes(e.target)) {
+          this.handleSelect(e)
+        }
         return
       case 'Escape':
         this.handleClose()
@@ -205,14 +223,16 @@ export class ListBox extends HTMLElement {
   }
 
   handleSelect(e) {
-    const option = e.target.closest('[slot="listbox-option"]')
+    const option = e.target.closest('[slot=listbox-option]')
 
-    if (!option) return
+    if (!option) {
+      return
+    }
 
     const newName = option.textContent
     const newValue = option.getAttribute('value')
 
-    this.setState({ name: newName, value: newValue, element: option })
+    this.state = { name: newName, value: newValue, element: option }
     this.render()
   }
 
@@ -222,12 +242,8 @@ export class ListBox extends HTMLElement {
     }
   }
 
-  setState(newState) {
-    this.#state = { ...this.#state, ...newState } 
-  }
-
   dispatch() {
-    const { value } = this.#state
+    const { value } = this.state
     const changeEvent = new CustomEvent('change', {
       bubbles: true,
       detail: { value: value },
@@ -237,7 +253,7 @@ export class ListBox extends HTMLElement {
   }
 
   render() {
-    const { name, element, placeholder, firstRender } = this.#state
+    const { name, element, placeholder, firstRender } = this.state
 
     if (placeholder && firstRender) {
       this.toggleValue.textContent = placeholder
@@ -253,9 +269,12 @@ export class ListBox extends HTMLElement {
       }
     }
 
-    this.handleClose()
-    this.dispatch()
+    if (!firstRender) {
+      this.handleClose()
+    }
+
     this.#state.firstRender = false
+    this.dispatch()
   }
 }
 
