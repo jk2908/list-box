@@ -94,7 +94,7 @@ export class ListBox extends HTMLElement {
           <slot name="listbox-toggle-icon" part="toggle-icon"></slot>
         </button>
         <div part="listbox">
-          <div role="listbox" part="listbox-options">
+          <div role="listbox" part="options">
             <slot name="listbox-option"></slot>
           </div>
         </div>
@@ -157,6 +157,7 @@ export class ListBox extends HTMLElement {
 
     if (isOpen) {
       this.state = { isOpen: true }
+      this.handleOpen()
     }
 
     if (placeholder) {
@@ -237,7 +238,9 @@ export class ListBox extends HTMLElement {
   }
 
   handleElementFocusLoss(e) {
-    if (!this.contains(e.relatedTarget)) {
+    const { isOpen } = this.state
+
+    if (!this.contains(e?.relatedTarget) && isOpen) {
       this.handleClose()
     }
   }
@@ -246,7 +249,7 @@ export class ListBox extends HTMLElement {
     const { value } = this.state
     const changeEvent = new CustomEvent('change', {
       bubbles: true,
-      detail: { value: value },
+      detail: { value },
     })
 
     this.dispatchEvent(changeEvent)
@@ -273,7 +276,7 @@ export class ListBox extends HTMLElement {
       this.handleClose()
     }
 
-    this.#state.firstRender = false
+    this.state = { firstRender: false }
     this.dispatch()
   }
 }
