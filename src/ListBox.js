@@ -112,6 +112,12 @@ export class ListBox extends HTMLElement {
       option.addEventListener('mouseup', this.handleSelect.bind(this), { signal })
     }
 
+    const { isOpen } = this.state
+
+    if (isOpen) {
+      this.handleOpen()
+    }
+
     this.render()
 
     this.toggle.addEventListener('mousedown', this.handleToggle.bind(this), { signal })
@@ -157,7 +163,6 @@ export class ListBox extends HTMLElement {
 
     if (isOpen) {
       this.state = { isOpen: true }
-      this.handleOpen()
     }
 
     if (placeholder) {
