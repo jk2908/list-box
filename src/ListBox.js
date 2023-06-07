@@ -93,10 +93,8 @@ export class ListBox extends HTMLElement {
           <span part="toggle-value"></span>
           <slot name="listbox-toggle-icon" part="toggle-icon"></slot>
         </button>
-        <div part="listbox">
-          <div role="listbox" part="options">
-            <slot name="listbox-option"></slot>
-          </div>
+        <div part="listbox" role="listbox" part="options">
+          <slot name="listbox-option"></slot>
         </div>
       </div>  
     `
