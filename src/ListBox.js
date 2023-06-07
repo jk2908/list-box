@@ -175,14 +175,16 @@ export class ListBox extends HTMLElement {
   }
 
   handleOpen() {
-    const { element } = this.state
+    const { element, firstRender } = this.state
 
     this.setAttribute('open', '')
     this.toggle.setAttribute('aria-expanded', 'true')
 
-    setTimeout(() => {
-      element.focus()
-    }, 0)
+    if (!firstRender) {
+      setTimeout(() => {
+        element.focus()
+      }, 0)
+    }
   }
 
   handleClose() {
