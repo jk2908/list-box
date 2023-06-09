@@ -54,6 +54,10 @@ export class ListBox extends HTMLElement {
     return this.shadowRoot.querySelector('[part=toggle-value]')
   }
 
+  get listBox() {
+    return this.shadowRoot.querySelector('[part=listbox]')
+  }
+
   connectedCallback() {
     this.shadowRoot.innerHTML = `
       <style>
@@ -106,8 +110,6 @@ export class ListBox extends HTMLElement {
     for (const option of this.slotted) {
       option.setAttribute('tabindex', '0')
       option.setAttribute('role', 'option')
-
-      option.addEventListener('mouseup', this.handleSelect.bind(this), { signal })
     }
 
     const { isOpen } = this.state
@@ -116,7 +118,19 @@ export class ListBox extends HTMLElement {
       this.handleOpen()
     }
 
-    this.render()
+    this.render({ withDispatch: true })
+
+        this.listBox.addEventListener(
+      'mouseup',
+      e => {
+        const targetElement = e.target.closest('[slot=listbox-option]')
+
+        if (targetElement) {
+          this.handleSelect(targetElement, () => this.render({ withDispatch: true, withClose: true }))
+        }
+      },
+      { signal }
+    )
 
     this.toggle.addEventListener('mousedown', this.handleToggle.bind(this), { signal })
     this.shadowRoot.addEventListener('keydown', this.handleKeys.bind(this), { signal })
@@ -208,7 +222,7 @@ export class ListBox extends HTMLElement {
         if (e.target === this.toggle) {
           this.handleToggle()
         } else if (this.slotted.includes(e.target)) {
-          this.handleSelect(e)
+          this.handleSelect(e.target.closest('[slot=listbox-option]'), () => this.render({ withDispatch: true, withClose: true }))
         }
         return
       case 'Escape':
@@ -228,18 +242,19 @@ export class ListBox extends HTMLElement {
     }
   }
 
-  handleSelect(e) {
-    const option = e.target.closest('[slot=listbox-option]')
-
-    if (!option) {
+  handleSelect(targetElement, fn) {
+    if (!targetElement) {
       return
     }
 
-    const newName = option.textContent
-    const newValue = option.getAttribute('value')
+    const newName = targetElement.textContent
+    const newValue = targetElement.getAttribute('value')
 
-    this.state = { name: newName, value: newValue, element: option }
-    this.render()
+    this.state = { name: newName, value: newValue, element: targetElement }
+    
+    if (fn) {
+      fn()
+    }
   }
 
   handleElementFocusLoss(e) {
@@ -260,7 +275,7 @@ export class ListBox extends HTMLElement {
     this.dispatchEvent(changeEvent)
   }
 
-  render() {
+  render({ withDispatch, withClose }) {
     const { name, element, placeholder, firstRender } = this.state
 
     if (placeholder && firstRender) {
@@ -277,12 +292,15 @@ export class ListBox extends HTMLElement {
       }
     }
 
-    if (!firstRender) {
+    if (withClose) {
       this.handleClose()
     }
 
+    if (withDispatch) {
+      this.dispatch()
+    }
+
     this.state = { firstRender: false }
-    this.dispatch()
   }
 }
 
