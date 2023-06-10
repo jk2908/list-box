@@ -107,9 +107,9 @@ export class ListBox extends HTMLElement {
 
     const { signal } = this.controller
 
-    for (const option of this.slotted) {
-      option.setAttribute('tabindex', '0')
-      option.setAttribute('role', 'option')
+    for (const slot of this.slotted) {
+      slot.setAttribute('tabindex', '0')
+      slot.setAttribute('role', 'option')
     }
 
     const { isOpen } = this.state
@@ -120,7 +120,7 @@ export class ListBox extends HTMLElement {
 
     this.render({ withDispatch: true })
 
-        this.listBox.addEventListener(
+    this.listBox.addEventListener(
       'mouseup',
       e => {
         const targetElement = e.target.closest('[slot=listbox-option]')
@@ -222,7 +222,9 @@ export class ListBox extends HTMLElement {
         if (e.target === this.toggle) {
           this.handleToggle()
         } else if (this.slotted.includes(e.target)) {
-          this.handleSelect(e.target.closest('[slot=listbox-option]'), () => this.render({ withDispatch: true, withClose: true }))
+          this.handleSelect(e.target.closest('[slot=listbox-option]'), () =>
+            this.render({ withDispatch: true, withClose: true })
+          )
         }
         return
       case 'Escape':
@@ -251,7 +253,7 @@ export class ListBox extends HTMLElement {
     const newValue = targetElement.getAttribute('value')
 
     this.state = { name: newName, value: newValue, element: targetElement }
-    
+
     if (fn) {
       fn()
     }
@@ -284,11 +286,11 @@ export class ListBox extends HTMLElement {
       this.toggleValue.textContent = name
     }
 
-    for (const option of this.slotted) {
-      if (option === element) {
-        option.setAttribute('aria-selected', 'true')
+    for (const slot of this.slotted) {
+      if (slot === element) {
+        slot.setAttribute('aria-selected', 'true')
       } else {
-        option.setAttribute('aria-selected', 'false')
+        slot.setAttribute('aria-selected', 'false')
       }
     }
 
