@@ -1,4 +1,5 @@
 const initialState = {
+  id: undefined,
   name: '',
   value: '',
   element: null,
@@ -108,8 +109,8 @@ export class ListBox extends HTMLElement {
     const { signal } = this.controller
 
     for (const slot of this.slotted) {
-      slot.setAttribute('tabindex', '0')
-      slot.setAttribute('role', 'option')
+      slot.tabIndex = '0'
+      slot.role = 'option'
     }
 
     const { isOpen } = this.state
@@ -287,11 +288,7 @@ export class ListBox extends HTMLElement {
     }
 
     for (const slot of this.slotted) {
-      if (slot === element) {
-        slot.setAttribute('aria-selected', 'true')
-      } else {
-        slot.setAttribute('aria-selected', 'false')
-      }
+      slot.setAttribute('aria-selected', slot === element)
     }
 
     if (withClose) {
