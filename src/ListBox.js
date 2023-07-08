@@ -193,7 +193,7 @@ export class ListBox extends HTMLElement {
     const { element, firstRender } = this.state
 
     this.setAttribute('open', '')
-    this.toggle.setAttribute('aria-expanded', 'true')
+    this.toggle.ariaExpanded = true
 
     if (!firstRender) {
       setTimeout(() => {
@@ -204,7 +204,7 @@ export class ListBox extends HTMLElement {
 
   handleClose() {
     this.removeAttribute('open')
-    this.toggle.setAttribute('aria-expanded', 'false')
+    this.toggle.ariaExpanded = false
     this.toggle.focus()
   }
 
@@ -288,7 +288,7 @@ export class ListBox extends HTMLElement {
     }
 
     for (const slot of this.slotted) {
-      slot.setAttribute('aria-selected', slot === element)
+      slot.ariaSelected === element
     }
 
     if (withClose) {
