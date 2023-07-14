@@ -264,6 +264,8 @@ export class ListBox extends HTMLElement {
       fn()
     }
 
+    this.handleClose()
+
     setTimeout(() => {
       this.dispatch('change')
     }, 0)
@@ -287,7 +289,7 @@ export class ListBox extends HTMLElement {
     this.dispatchEvent(changeEvent)
   }
 
-  render({ withClose } = {}) {
+  render() {
     const { name, element, placeholder, firstRender } = this.state
 
     if (placeholder && firstRender) {
@@ -298,10 +300,6 @@ export class ListBox extends HTMLElement {
 
     for (const slot of this.options) {
       slot.ariaSelected = slot === element
-    }
-
-    if (withClose) {
-      this.handleClose()
     }
 
     this.state = { firstRender: false }
