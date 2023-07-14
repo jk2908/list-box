@@ -126,7 +126,7 @@ export class ListBox extends HTMLElement {
         const targetElement = e.target.closest('[slot=listbox-option]')
 
         if (targetElement) {
-          this.handleSelect(targetElement, () => this.render({ withDispatch: true, withClose: true }))
+          this.handleSelect(targetElement, () => this.render())
         }
       },
       { signal }
@@ -228,9 +228,7 @@ export class ListBox extends HTMLElement {
         if (e.target === this.toggle) {
           this.handleToggle()
         } else if (this.options.includes(e.target)) {
-          this.handleSelect(e.target.closest('[slot=listbox-option]'), () =>
-            this.render({ withDispatch: true, withClose: true })
-          )
+          this.handleSelect(e.target.closest('[slot=listbox-option]'), () => this.render())
         }
         return
       case 'Escape':
